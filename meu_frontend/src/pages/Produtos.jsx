@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Trash2, AlertCircle } from 'lucide-react';
-import '../pages/styles/produto.css';
+import './styles/produto.css';
 
 function Produtos() {
   const [produtos, setProdutos] = useState([]);
