@@ -1,0 +1,6 @@
+# Ignora arquivos de ambiente (Senhas e URLs)
+.env
+
+# Ignora arquivos temporários do Python
+__pycache__/
+*.pyc
