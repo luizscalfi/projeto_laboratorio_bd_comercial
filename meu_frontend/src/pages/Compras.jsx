@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Store, ShoppingCart, Trash2, CheckCircle, XCircle, PackagePlus, Eye, EyeOff, List } from 'lucide-react';
-import './styles/produto.css';
+import './styles/estilo_produto.css';
 
 function Compras() {
   const [abaAtiva, setAbaAtiva] = useState('fornecedores'); 

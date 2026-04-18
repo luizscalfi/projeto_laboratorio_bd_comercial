@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingBag, Trash2, CheckCircle, User, CreditCard, List, Lock, Eye, EyeOff, UserPlus } from 'lucide-react';
-import './styles/produto.css';
+import './styles/estilo_produto.css';
 
 function Vendas() {
   const [abaAtiva, setAbaAtiva] = useState('pdv'); 
