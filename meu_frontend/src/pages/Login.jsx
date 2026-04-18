@@ -7,12 +7,16 @@ function Login({ aoLogar }) {
   const [erro, setErro] = useState('');
   const navigate = useNavigate();
 
+  // MÁGICA: Puxando a URL da nuvem (ou do PC se estiver testando local)
+  const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setErro('');
 
     try {
-      const resposta = await fetch('http://127.0.0.1:8000/usuarios/login/', {
+      // Substituímos a URL chumbada pela variável dinâmica com crases (template string)
+      const resposta = await fetch(`${API_URL}/usuarios/login/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, senha })
