@@ -44,6 +44,13 @@ def custom_openapi(username: str = Depends(autenticar_docs)):
     return get_openapi(title="API Gestão Comercial", version="1.0.0", routes=app.routes)
 
 # ---------------------------------------------------------
+# ROTA RAIZ E HEALTH CHECK (Para o Render não reclamar)
+# ---------------------------------------------------------
+@app.api_route("/", methods=["GET", "HEAD"])
+def raiz():
+    return {"status": "online", "mensagem": "Backend de Gestão Comercial Ativo"}
+
+# ---------------------------------------------------------
 # CONFIGURAÇÃO DO CORS (Para o React conseguir conversar)
 # ---------------------------------------------------------
 app.add_middleware(
@@ -53,6 +60,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
 
 # ---------------------------------------------------------
 # INCLUSÃO DAS SUAS ROTAS NO APP
