@@ -22,6 +22,7 @@ function Compras() {
 
   const [detalhesCompraId, setDetalhesCompraId] = useState(null);
   const [itensDetalhe, setItensDetalhe] = useState([]);
+  const [filtroData, setFiltroData] = useState('');
 
   const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 
@@ -132,7 +133,6 @@ function Compras() {
     if (!usuarioLogado) return alert("Erro de sessão: Utilizador não identificado.");
 
     try {
-      // 1. Cria a nota fiscal no banco (Enviando o ID do Utilizador)
       const resCompra = await fetch(`${API_URL}/compras/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -145,7 +145,6 @@ function Compras() {
       if (!resCompra.ok) throw new Error((await resCompra.json()).detail);
       const { id_compra } = await resCompra.json();
 
-      // 2. Envia os itens um a um
       for (const item of carrinho) {
         await fetch(`${API_URL}/compras/itens/`, {
           method: 'POST',
@@ -181,12 +180,21 @@ function Compras() {
   async function handleDeletarCompraHistorico(id) {
     if (!window.confirm("Atenção: Esta ação estornará o Stock e o Financeiro. Continuar?")) return;
     try {
-      // Passando o ID do utilizador pela URL para a rota DELETE
       const res = await fetch(`${API_URL}/compras/${id}?id_usuario=${usuarioLogado.id}`, { method: 'DELETE' });
       if (res.ok) carregarDados(); 
       else alert((await res.json()).detail);
     } catch (e) { alert("Erro ao processar estorno."); }
   }
+
+  // LÓGICA DO FILTRO DE DATAS
+  const comprasFiltradas = filtroData 
+    ? historicoCompras.filter(c => {
+        if (!c.data_compra) return false;
+        const dataAjustada = new Date(c.data_compra);
+        const dataFormatada = `${dataAjustada.getFullYear()}-${String(dataAjustada.getMonth() + 1).padStart(2, '0')}-${String(dataAjustada.getDate()).padStart(2, '0')}`;
+        return dataFormatada === filtroData;
+      })
+    : historicoCompras;
 
   return (
     <div className="container">
@@ -276,14 +284,33 @@ function Compras() {
             )}
           </div>
 
-          <h3>Histórico de Entradas</h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+            <h3 style={{ margin: 0 }}>Histórico de Entradas</h3>
+            
+            {/* O CALENDÁRIO MÁGICO AQUI */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#ecf0f1', padding: '8px 15px', borderRadius: '6px' }}>
+              <label style={{ fontWeight: 'bold', color: '#2c3e50', fontSize: '14px' }}>Filtrar por Data:</label>
+              <input 
+                type="date" 
+                value={filtroData} 
+                onChange={(e) => setFiltroData(e.target.value)}
+                style={{ padding: '5px', border: '1px solid #bdc3c7', borderRadius: '4px' }}
+              />
+              {filtroData && (
+                <button onClick={() => setFiltroData('')} style={{ background: '#e74c3c', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>Limpar</button>
+              )}
+            </div>
+          </div>
+
           <table className="tabela">
-            <thead><tr><th>ID</th><th>Fornecedor</th><th>Total</th><th style={{textAlign: 'center'}}>Ações</th></tr></thead>
+            <thead><tr><th>ID</th><th>Data / Hora</th><th>Fornecedor</th><th>Total</th><th style={{textAlign: 'center'}}>Ações</th></tr></thead>
             <tbody>
-              {historicoCompras.map(c => (
+              {comprasFiltradas.map(c => (
                 <React.Fragment key={c.id}>
                   <tr>
                     <td><strong>#{c.id}</strong></td>
+                    {/* COLUNA DE DATA E HORA AQUI */}
+                    <td>{c.data_compra ? new Date(c.data_compra).toLocaleString('pt-BR') : 'N/A'}</td>
                     <td>{c.nome_fornecedor}</td>
                     <td className="preco">R$ {(c.valor_total || 0).toFixed(2)}</td>
                     <td style={{textAlign: 'center', display: 'flex', justifyContent: 'center', gap: '15px'}}>
@@ -299,7 +326,7 @@ function Compras() {
                   </tr>
                   {detalhesCompraId === c.id && (
                     <tr style={{ background: '#f8f9fa' }}>
-                      <td colSpan="4" style={{ padding: '15px 40px' }}>
+                      <td colSpan="5" style={{ padding: '15px 40px' }}>
                         <ul style={{ margin: 0, fontSize: '14px' }}>
                           {itensDetalhe.map(it => <li key={it.id}>{it.quantidade}x {it.nome_produto} (R$ {parseFloat(it.valor_unitario).toFixed(2)})</li>)}
                         </ul>
@@ -308,6 +335,7 @@ function Compras() {
                   )}
                 </React.Fragment>
               ))}
+              {comprasFiltradas.length === 0 && <tr><td colSpan="5" style={{textAlign: 'center', padding: '20px'}}>Nenhuma entrada encontrada para este filtro.</td></tr>}
             </tbody>
           </table>
         </section>

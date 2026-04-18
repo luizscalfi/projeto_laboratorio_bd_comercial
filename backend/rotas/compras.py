@@ -16,7 +16,7 @@ class NovoItemCompra(BaseModel):
     valor_unitario: float
 
 # -------------------------------------------------------------------
-# ROTA 1: LISTAR HISTÓRICO
+# ROTA 1: LISTAR HISTÓRICO (Trazendo a data_compra)
 # -------------------------------------------------------------------
 @router.get("/")
 def listar_historico_compras():
@@ -25,7 +25,7 @@ def listar_historico_compras():
         conn = obter_conexao()
         cursor = conn.cursor(cursor_factory=RealDictCursor)
         sql = """
-            SELECT c.id, c.valor_total, f.razao_social as nome_fornecedor
+            SELECT c.id, c.valor_total, c.data_compra, f.razao_social as nome_fornecedor
             FROM "compra" c
             JOIN "fornecedor" f ON c.id_fornecedor = f.id
             ORDER BY c.id DESC;
@@ -38,7 +38,7 @@ def listar_historico_compras():
         if conn:
             cursor.close()
             conn.close()
-
+            
 # -------------------------------------------------------------------
 # ROTA 2: LISTAR ITENS DA COMPRA
 # -------------------------------------------------------------------
@@ -64,7 +64,7 @@ def listar_itens_compra(id_compra: int):
             conn.close()
 
 # -------------------------------------------------------------------
-# ROTA 3: INICIAR COMPRA (Com Registo de Auditoria)
+# ROTA 3: INICIAR COMPRA
 # -------------------------------------------------------------------
 @router.post("/")
 def iniciar_compra(compra: NovaCompra):
@@ -73,12 +73,10 @@ def iniciar_compra(compra: NovaCompra):
         conn = obter_conexao()
         cursor = conn.cursor()
         
-        # 1. Cria a nota de compra
         sql = 'INSERT INTO "compra" ("id_fornecedor", "valor_total") VALUES (%s, 0.00) RETURNING id;'
         cursor.execute(sql, (compra.id_fornecedor,))
         id_gerado = cursor.fetchone()[0]
         
-        # 2. Grava o LOG DE AUDITORIA com o utilizador real
         sql_log = 'INSERT INTO "log_auditoria" ("id_usuario", "acao") VALUES (%s, %s);'
         acao = f"Iniciou a Nota de Compra #{id_gerado}"
         cursor.execute(sql_log, (compra.id_usuario, acao))
@@ -121,7 +119,7 @@ def registrar_item_compra(item: NovoItemCompra):
             conn.close()
             
 # -------------------------------------------------------------------
-# ROTA 5: DELETAR COMPRA EM CASCATA (Com Registo de Auditoria)
+# ROTA 5: DELETAR COMPRA EM CASCATA
 # -------------------------------------------------------------------
 @router.delete("/{id_compra}")
 def cancelar_compra(id_compra: int, id_usuario: int):
@@ -137,7 +135,6 @@ def cancelar_compra(id_compra: int, id_usuario: int):
         if not cursor.fetchone():
             raise HTTPException(status_code=404, detail="Compra não encontrada.")
             
-        # Grava o LOG DE AUDITORIA do estorno
         sql_log = 'INSERT INTO "log_auditoria" ("id_usuario", "acao") VALUES (%s, %s);'
         acao = f"Estornou e cancelou a Compra #{id_compra} (Itens e Financeiro revertidos)"
         cursor.execute(sql_log, (id_usuario, acao))

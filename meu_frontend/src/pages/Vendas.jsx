@@ -25,16 +25,15 @@ function Vendas() {
   const [clienteSelecionado, setClienteSelecionado] = useState('');
   const [pagamentoSelecionado, setPagamentoSelecionado] = useState('');
 
-  // ---------------------------------------------------
-  // NOVO: Estados do Cadastro Rápido de Cliente
-  // ---------------------------------------------------
+  // Estados do Cadastro Rápido de Cliente
   const [mostrarModalCliente, setMostrarModalCliente] = useState(false);
   const [formCliente, setFormCliente] = useState({ nome: '', cpf_cnpj: '' });
 
-  // Estados para Visualizar Detalhes da Venda
+  // Estados para Visualizar Detalhes e Filtro de Data
   const [detalhesVendaId, setDetalhesVendaId] = useState(null);
   const [itensDetalhe, setItensDetalhe] = useState([]);
-  
+  const [filtroData, setFiltroData] = useState(''); // <-- NOVO ESTADO DO FILTRO
+
   const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 
   useEffect(() => {
@@ -84,9 +83,6 @@ function Vendas() {
     } catch (e) { console.error("Erro ao sincronizar dados:", e); }
   }
 
-  // ---------------------------------------------------
-  // NOVO: Função de Salvar Cliente
-  // ---------------------------------------------------
   async function handleCadastrarCliente(e) {
     e.preventDefault();
     try {
@@ -108,10 +104,7 @@ function Vendas() {
       setFormCliente({ nome: '', cpf_cnpj: '' });
       setMostrarModalCliente(false);
       
-      // Recarrega a lista de clientes para ele aparecer no select
       await carregarDados();
-      
-      // Já seleciona automaticamente o cliente recém-criado na venda!
       setClienteSelecionado(dados.id_cliente.toString());
 
     } catch (erro) {
@@ -203,6 +196,16 @@ function Vendas() {
       setDetalhesVendaId(id);
     } catch (e) { alert("Erro ao carregar detalhes da venda."); }
   }
+
+  // LÓGICA DO FILTRO DE DATAS
+  const vendasFiltradas = filtroData 
+    ? historicoVendas.filter(v => {
+        if (!v.data_venda) return false;
+        const dataAjustada = new Date(v.data_venda);
+        const dataFormatada = `${dataAjustada.getFullYear()}-${String(dataAjustada.getMonth() + 1).padStart(2, '0')}-${String(dataAjustada.getDate()).padStart(2, '0')}`;
+        return dataFormatada === filtroData;
+      })
+    : historicoVendas;
 
   return (
     <div className="container">
@@ -305,7 +308,7 @@ function Vendas() {
                   </div>
                 </div>
 
-                {/* FORMULÁRIO DE CADASTRO RÁPIDO (Aparece ao clicar no botão azul) */}
+                {/* FORMULÁRIO DE CADASTRO RÁPIDO */}
                 {mostrarModalCliente && (
                   <form onSubmit={handleCadastrarCliente} style={{ background: '#34495e', padding: '15px', borderRadius: '6px', marginBottom: '15px', border: '1px solid #3498db' }}>
                     <h4 style={{ margin: '0 0 10px 0', color: '#3498db' }}>Novo Cliente</h4>
@@ -346,15 +349,32 @@ function Vendas() {
         </section>
       )}
 
-      {/* ABA 2: HISTÓRICO DE VENDAS */}
+      {/* ABA 2: HISTÓRICO DE VENDAS COM CALENDÁRIO */}
       {abaAtiva === 'historico' && (
         <section>
-          <h3>Relatório de Vendas Concluídas</h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+            <h3 style={{ margin: 0 }}>Relatório de Vendas Concluídas</h3>
+            
+            {/* O CALENDÁRIO MÁGICO AQUI */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#ecf0f1', padding: '8px 15px', borderRadius: '6px' }}>
+              <label style={{ fontWeight: 'bold', color: '#2c3e50', fontSize: '14px' }}>Filtrar por Data:</label>
+              <input 
+                type="date" 
+                value={filtroData} 
+                onChange={(e) => setFiltroData(e.target.value)}
+                style={{ padding: '5px', border: '1px solid #bdc3c7', borderRadius: '4px' }}
+              />
+              {filtroData && (
+                <button onClick={() => setFiltroData('')} style={{ background: '#e74c3c', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>Limpar</button>
+              )}
+            </div>
+          </div>
+
           <table className="tabela">
             <thead>
               <tr>
                 <th>ID</th>
-                <th>Data</th>
+                <th>Data / Hora</th>
                 <th>Cliente</th>
                 <th>Pagamento</th>
                 <th>Total</th>
@@ -362,11 +382,12 @@ function Vendas() {
               </tr>
             </thead>
             <tbody>
-              {historicoVendas.map(v => (
+              {vendasFiltradas.map(v => (
                 <React.Fragment key={v.id}>
                   <tr>
                     <td><strong>#{v.id}</strong></td>
-                    <td>{new Date(v.data_venda).toLocaleDateString('pt-BR')}</td>
+                    {/* AQUI MOSTRA A DATA COM A HORA */}
+                    <td>{v.data_venda ? new Date(v.data_venda).toLocaleString('pt-BR') : 'N/A'}</td>
                     <td>{v.nome_cliente || 'Cliente Padrão'}</td>
                     <td>{v.forma_pagamento || 'Dinheiro'}</td>
                     <td className="preco" style={{ color: '#27ae60' }}>R$ {(v.valor_total || 0).toFixed(2)}</td>
@@ -392,7 +413,7 @@ function Vendas() {
                   )}
                 </React.Fragment>
               ))}
-              {historicoVendas.length === 0 && <tr><td colSpan="6" style={{textAlign: 'center', padding: '20px'}}>Nenhuma venda registada.</td></tr>}
+              {vendasFiltradas.length === 0 && <tr><td colSpan="6" style={{textAlign: 'center', padding: '20px'}}>Nenhuma venda encontrada para este filtro.</td></tr>}
             </tbody>
           </table>
         </section>
