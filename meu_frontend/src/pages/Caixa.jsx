@@ -1,30 +1,43 @@
 import React, { useState, useEffect } from 'react';
+import { LoaderCircle } from 'lucide-react';
 
 function Caixa({ usuarioLogado }) {
-  const [idCaixa, setIdCaixa] = useState('1'); 
+  const [idCaixa, setIdCaixa] = useState('1');
   const [valorAbertura, setValorAbertura] = useState('');
-  
-  const [sessaoAtiva, setSessaoAtiva] = useState(null); 
+
+  const [sessaoAtiva, setSessaoAtiva] = useState(null);
   const [carregandoStatus, setCarregandoStatus] = useState(true);
 
   const [mensagemSucesso, setMensagemSucesso] = useState('');
   const [mensagemErro, setMensagemErro] = useState('');
 
+  const [rotacao, setRotacao] = useState(0);
+
+  useEffect(() => {
+    if (!carregandoStatus) return;
+
+    const interval = setInterval(() => {
+      setRotacao((prev) => prev + 8);
+    }, 16);
+
+    return () => clearInterval(interval);
+  }, [carregandoStatus]);
+
   useEffect(() => {
     verificarStatusCaixa();
     setMensagemSucesso('');
     setMensagemErro('');
-  }, [idCaixa]); 
+  }, [idCaixa]);
 
   const verificarStatusCaixa = async () => {
     setCarregandoStatus(true);
     try {
       const resposta = await fetch(`http://127.0.0.1:8000/caixa/status/${idCaixa}`);
       const dados = await resposta.json();
-      
+
       if (dados.sessao_ativa) {
         setSessaoAtiva(dados.sessao);
-        setValorAbertura(''); 
+        setValorAbertura('');
       } else {
         setSessaoAtiva(null);
         if (dados.ultimo_saldo !== undefined) {
@@ -62,8 +75,8 @@ function Caixa({ usuarioLogado }) {
         setMensagemErro(dados.detail || "Erro ao abrir o caixa.");
       } else {
         setMensagemSucesso(dados.mensagem);
-        setValorAbertura(''); 
-        verificarStatusCaixa(); 
+        setValorAbertura('');
+        verificarStatusCaixa();
       }
     } catch (erro) {
       setMensagemErro("Erro ao conectar com o servidor Python.");
@@ -80,7 +93,7 @@ function Caixa({ usuarioLogado }) {
       const resposta = await fetch('http://127.0.0.1:8000/caixa/fechar/', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id_sessao_caixa: sessaoAtiva.id }) 
+        body: JSON.stringify({ id_sessao_caixa: sessaoAtiva.id })
       });
 
       const dados = await resposta.json();
@@ -89,7 +102,7 @@ function Caixa({ usuarioLogado }) {
         setMensagemErro(dados.detail || "Erro ao fechar o caixa.");
       } else {
         setMensagemSucesso("Expediente encerrado com sucesso! Terminal bloqueado.");
-        verificarStatusCaixa(); 
+        verificarStatusCaixa();
       }
     } catch (erro) {
       setMensagemErro("Erro ao conectar com o servidor Python.");
@@ -101,7 +114,7 @@ function Caixa({ usuarioLogado }) {
       <h2 style={{ color: '#2c3e50', borderBottom: '2px solid #3498db', paddingBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span>💰 Controle de Caixa</span>
       </h2>
-      
+
       <div style={{ backgroundColor: '#f8f9fa', padding: '15px', borderRadius: '5px', marginBottom: '20px', border: '1px solid #dee2e6', display: 'flex', alignItems: 'center', gap: '10px' }}>
         <div style={{ backgroundColor: '#3498db', color: 'white', width: '35px', height: '35px', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: 'bold' }}>
           {usuarioLogado.nome.charAt(0).toUpperCase()}
@@ -111,10 +124,10 @@ function Caixa({ usuarioLogado }) {
           <p style={{ margin: 0, fontWeight: 'bold', color: '#2c3e50' }}>{usuarioLogado.nome}</p>
         </div>
       </div>
-      
+
       <div style={{ marginBottom: '20px' }}>
         <label style={{ fontWeight: 'bold', display: 'block', marginBottom: '5px', color: '#34495e' }}>Qual terminal você quer acessar?</label>
-        <select 
+        <select
           value={idCaixa}
           onChange={(e) => setIdCaixa(e.target.value)}
           style={{ width: '100%', padding: '12px', borderRadius: '5px', border: '1px solid #ccc', backgroundColor: '#e8f4f8', fontWeight: 'bold', color: '#2980b9' }}
@@ -128,17 +141,32 @@ function Caixa({ usuarioLogado }) {
       {mensagemErro && <div style={{ backgroundColor: '#f8d7da', color: '#721c24', padding: '15px', borderRadius: '5px', marginBottom: '15px', fontWeight: 'bold' }}>❌ {mensagemErro}</div>}
 
       {carregandoStatus ? (
-        <div style={{ textAlign: 'center', padding: '40px', color: '#7f8c8d' }}>
-          ⏳ Verificando status do terminal no banco de dados...
+        <div style={{
+          textAlign: 'center',
+          padding: '40px',
+          color: '#7f8c8d',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '10px'
+        }}>
+          <LoaderCircle
+            size={40}
+            style={{
+              transform: `rotate(${rotacao}deg)`,
+              color: '#3498db'
+            }}
+          />
+          <span>Verificando status do terminal...</span>
         </div>
       ) : sessaoAtiva ? (
-        
+
         sessaoAtiva.operador === usuarioLogado.nome ? (
-          
+
           <div style={{ backgroundColor: '#fff3cd', border: '1px solid #ffeeba', padding: '20px', borderRadius: '8px', textAlign: 'center' }}>
             <h3 style={{ color: '#856404', margin: '0 0 5px 0' }}>Sessão Ativa - Seu Caixa está Aberto</h3>
             <p style={{ color: '#856404', margin: '0 0 15px 0', fontSize: '14px' }}>Sessão #{sessaoAtiva.id}</p>
-            
+
             {/* MINI-DASHBOARD DO CAIXA */}
             <div style={{ display: 'flex', justifyContent: 'space-between', backgroundColor: 'rgba(255,255,255,0.6)', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
               <div style={{ flex: 1 }}>
@@ -170,7 +198,7 @@ function Caixa({ usuarioLogado }) {
           <div style={{ backgroundColor: '#f8d7da', border: '1px solid #f5c6cb', padding: '20px', borderRadius: '8px', textAlign: 'center' }}>
             <h3 style={{ color: '#721c24', margin: '0 0 10px 0' }}>⚠️ Terminal Ocupado</h3>
             <p style={{ color: '#721c24', margin: '0 0 0 0' }}>
-              Este terminal já foi aberto por <strong>{sessaoAtiva.operador}</strong> e está em uso no momento.<br/><br/>
+              Este terminal já foi aberto por <strong>{sessaoAtiva.operador}</strong> e está em uso no momento.<br /><br />
               Por favor, selecione um terminal livre acima.
             </p>
           </div>
@@ -181,11 +209,11 @@ function Caixa({ usuarioLogado }) {
 
         <form onSubmit={handleAbrirCaixa} style={{ display: 'flex', flexDirection: 'column', gap: '15px', padding: '20px', border: '1px solid #e2e8f0', borderRadius: '8px', backgroundColor: '#f8fafc' }}>
           <h3 style={{ margin: '0 0 10px 0', color: '#2c3e50' }}>Este terminal está livre!</h3>
-          
+
           <div>
             <label style={{ fontWeight: 'bold', display: 'block', marginBottom: '5px' }}>Fundo de Troco Inicial (R$):</label>
             <p style={{ fontSize: '12px', color: '#7f8c8d', margin: '0 0 8px 0' }}>*Valor pré-preenchido baseado no saldo de fecho anterior</p>
-            <input type="number" step="0.01" placeholder="Ex: 150.00" value={valorAbertura} onChange={(e) => setValorAbertura(e.target.value)} required style={{ width: '100%', padding: '15px', borderRadius: '5px', border: '1px solid #ccc', fontSize: '18px' }} />
+            <input type="number" step="0.01" placeholder="Ex: 150.00" value={valorAbertura} onChange={(e) => setValorAbertura(e.target.value)} required style={{ width: '90%', padding: '15px', borderRadius: '5px', border: '1px solid #ccc', fontSize: '18px' }} />
           </div>
 
           <button type="submit" style={{ backgroundColor: '#27ae60', color: 'white', padding: '15px', border: 'none', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer', fontSize: '16px' }}>

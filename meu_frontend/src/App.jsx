@@ -36,29 +36,10 @@ function App() {
       <div style={{ fontFamily: 'sans-serif', backgroundColor: '#f5f6fa', minHeight: '100vh' }}>
         
         {/* Barra de Utilizador e Logout */}
-        {usuario && (
-          <div style={{ 
-            backgroundColor: '#34495e', padding: '10px 30px', 
-            display: 'flex', justifySelf: 'stretch', justifyContent: 'flex-end', 
-            alignItems: 'center', gap: '20px' 
-          }}>
-            <span style={{ color: '#ecf0f1', fontSize: '14px' }}>
-              Utilizador: <strong style={{ color: 'white' }}>{usuario.nome}</strong>
-            </span>
-            <button 
-              onClick={fazerLogout}
-              style={{ 
-                backgroundColor: '#e74c3c', color: 'white', border: 'none', 
-                padding: '6px 15px', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' 
-              }}
-            >
-              Sair
-            </button>
-          </div>
-        )}
+       
 
         {/* Menu de Navegação */}
-        {usuario && <Menu />}
+        {usuario && <Menu usuario={usuario} onLogout={fazerLogout} />}
 
         <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '30px' }}>
           <Routes>

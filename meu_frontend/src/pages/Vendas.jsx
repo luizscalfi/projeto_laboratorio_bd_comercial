@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingBag, Trash2, CheckCircle, User, CreditCard, List, Lock, Eye, EyeOff, UserPlus } from 'lucide-react';
 import './styles/estilo_produto.css';
+import { LoaderCircle  } from 'lucide-react';
+import './styles/vendas.css';
 
 function Vendas() {
   const [abaAtiva, setAbaAtiva] = useState('pdv'); 
@@ -210,10 +212,10 @@ function Vendas() {
   return (
     <div className="container">
       <div className="header" style={{ display: 'flex', gap: '20px', borderBottom: '2px solid #ecf0f1', paddingBottom: '10px', marginBottom: '20px' }}>
-        <button onClick={() => setAbaAtiva('pdv')} style={{ background: 'none', border: 'none', fontSize: '18px', fontWeight: 'bold', color: abaAtiva === 'pdv' ? '#27ae60' : '#bdc3c7', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <button onClick={() => setAbaAtiva('pdv')} style={{ background: 'none', border: 'none', fontSize: '18px', fontWeight: 'bold', color: abaAtiva === 'pdv' ? '#355872' : '#bdc3c7', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <ShoppingBag size={20} /> Ponto de Venda (PDV)
         </button>
-        <button onClick={() => setAbaAtiva('historico')} style={{ background: 'none', border: 'none', fontSize: '18px', fontWeight: 'bold', color: abaAtiva === 'historico' ? '#3498db' : '#bdc3c7', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <button onClick={() => setAbaAtiva('historico')} style={{ background: 'none', border: 'none', fontSize: '18px', fontWeight: 'bold', color: abaAtiva === 'historico' ? '#355872' : '#bdc3c7', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <List size={20} /> Histórico de Vendas
         </button>
       </div>
@@ -352,7 +354,7 @@ function Vendas() {
       {/* ABA 2: HISTÓRICO DE VENDAS COM CALENDÁRIO */}
       {abaAtiva === 'historico' && (
         <section>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', color: 'black' }}>
             <h3 style={{ margin: 0 }}>Relatório de Vendas Concluídas</h3>
             
             {/* O CALENDÁRIO MÁGICO AQUI */}

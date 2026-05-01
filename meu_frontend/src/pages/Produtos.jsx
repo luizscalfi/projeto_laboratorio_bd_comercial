@@ -56,7 +56,6 @@ function Produtos() {
     <div className="container">
       <div className="header">
         <h1 className="title">Catálogo de Produtos</h1>
-        {/* Botão "Novo" removido conforme solicitado */}
       </div>
 
       <table className="tabela">
