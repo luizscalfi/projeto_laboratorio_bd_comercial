@@ -105,9 +105,9 @@ def registrar_venda(venda: NovaVenda):
         id_gerado = cursor.fetchone()[0]
         
         # 2. Registra o LOG DE AUDITORIA
-        sql_log = 'INSERT INTO "log_auditoria" ("id_usuario", "acao") VALUES (%s, %s);'
+        '''sql_log = 'INSERT INTO "log_auditoria" ("id_usuario", "acao") VALUES (%s, %s);'
         acao = f"Realizou a Venda #{id_gerado} - Valor: R$ {venda.valor_total} (Caixa #{venda.id_sessao_caixa})"
-        cursor.execute(sql_log, (venda.id_usuario, acao))
+        cursor.execute(sql_log, (venda.id_usuario, acao))'''
         
         conn.commit()
         return {"status": "sucesso", "id_venda": id_gerado}

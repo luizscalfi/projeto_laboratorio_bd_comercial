@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 
 function Cadastro() {
   const [nome, setNome] = useState('');
@@ -17,7 +18,7 @@ function Cadastro() {
     const dados = { id_perfil: 1, nome, email, senha };
 
     try {
-      const resposta = await fetch('http://127.0.0.1:8000/usuarios/', {
+      const resposta = await fetch(`${API_URL}/usuarios/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(dados)

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { LoaderCircle } from 'lucide-react';
 
+
 function Caixa({ usuarioLogado }) {
   const [idCaixa, setIdCaixa] = useState('1');
   const [valorAbertura, setValorAbertura] = useState('');
@@ -10,6 +11,7 @@ function Caixa({ usuarioLogado }) {
 
   const [mensagemSucesso, setMensagemSucesso] = useState('');
   const [mensagemErro, setMensagemErro] = useState('');
+  const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 
   const [rotacao, setRotacao] = useState(0);
 
@@ -32,7 +34,7 @@ function Caixa({ usuarioLogado }) {
   const verificarStatusCaixa = async () => {
     setCarregandoStatus(true);
     try {
-      const resposta = await fetch(`http://127.0.0.1:8000/caixa/status/${idCaixa}`);
+      const resposta = await fetch(`${API_URL}/caixa/status/${idCaixa}`);
       const dados = await resposta.json();
 
       if (dados.sessao_ativa) {
@@ -63,7 +65,7 @@ function Caixa({ usuarioLogado }) {
     };
 
     try {
-      const resposta = await fetch('http://127.0.0.1:8000/caixa/abrir/', {
+      const resposta = await fetch(`${API_URL}/caixa/abrir/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(pacoteDeDados)
@@ -90,7 +92,7 @@ function Caixa({ usuarioLogado }) {
     if (!window.confirm("Atenção: Conferiu os valores da gaveta? Tem certeza que deseja fechar o expediente?")) return;
 
     try {
-      const resposta = await fetch('http://127.0.0.1:8000/caixa/fechar/', {
+      const resposta = await fetch(`${API_URL}/caixa/fechar/`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id_sessao_caixa: sessaoAtiva.id })
