@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+
 
 function Caixa({ usuarioLogado }) {
   const [idCaixa, setIdCaixa] = useState('1'); 
@@ -10,6 +10,7 @@ function Caixa({ usuarioLogado }) {
 
   const [mensagemSucesso, setMensagemSucesso] = useState('');
   const [mensagemErro, setMensagemErro] = useState('');
+  const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 
   useEffect(() => {
     verificarStatusCaixa();
