@@ -105,9 +105,9 @@ def registrar_venda(venda: NovaVenda):
         id_gerado = cursor.fetchone()[0]
         
         # 2. Registra o LOG DE AUDITORIA
-        '''sql_log = 'INSERT INTO "log_auditoria" ("id_usuario", "acao") VALUES (%s, %s);'
+        sql_log = 'INSERT INTO "log_auditoria" ("id_usuario", "acao") VALUES (%s, %s);'
         acao = f"Realizou a Venda #{id_gerado} - Valor: R$ {venda.valor_total} (Caixa #{venda.id_sessao_caixa})"
-        cursor.execute(sql_log, (venda.id_usuario, acao))'''
+        cursor.execute(sql_log, (venda.id_usuario, acao))
         
         conn.commit()
         return {"status": "sucesso", "id_venda": id_gerado}
@@ -139,14 +139,13 @@ def registrar_item_venda(item: NovoItemVenda):
         if estoque_atual < item.quantidade:
             raise HTTPException(status_code=400, detail=f"Stock insuficiente para '{nome_produto}'. Restam apenas {estoque_atual} unidades.")
         
+        # O INSERT do item da venda
         sql_insert = """
             INSERT INTO "item_venda" ("id_venda", "id_produto", "quantidade", "valor_unitario")
             VALUES (%s, %s, %s, %s) RETURNING id;
         """
         cursor.execute(sql_insert, (item.id_venda, item.id_produto, item.quantidade, item.valor_unitario))
         id_item = cursor.fetchone()[0]
-        
-        cursor.execute('UPDATE "produto" SET quantidade_estoque = quantidade_estoque - %s WHERE id = %s;', (item.quantidade, item.id_produto))
         
         conn.commit()
         return {"status": "sucesso", "mensagem": "Item adicionado e stock reduzido!", "id_item": id_item}
