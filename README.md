@@ -50,7 +50,7 @@ O diferencial técnico deste projeto é a delegação de tarefas críticas para 
 
 ---
 
-## 📁 Estrutura de Pastas
+## Estrutura de Pastas
 
 ```text
 ├── backend/
@@ -68,7 +68,7 @@ O diferencial técnico deste projeto é a delegação de tarefas críticas para 
 └── Dicionário_de_dados.xlsx
 
 ```
-## 🚀 Como Executar
+## Como Executar
 
 ### 1. Banco de Dados
 Certifique-se de ter uma instância do PostgreSQL ativa. Execute os scripts da pasta `/sql` na ordem:
@@ -97,15 +97,15 @@ npm run dev
 
 ---
 
-## 🔗 Links Úteis
+## Links Úteis
 
 * **Repositório:** [https://github.com/luizscalfi/projeto_laboratorio_bd_comercial](https://github.com/luizscalfi/projeto_laboratorio_bd_comercial)
-* **Aplicação em Produção:** [Link do seu Frontend no Render]
-* **Documentação da API (Swagger):** [https://seu-backend.onrender.com/docs](https://seu-backend.onrender.com/docs)
+* **Aplicação em Produção:**  https://projeto-laboratorio-bd-comercial-1.onrender.com
+* **Documentação da API (Swagger):** https://projeto-laboratorio-bd-comercial.onrender.com/docs  
 
 ---
 
-## 👥 Autores
+## Autores
 
 * **Diego Rafael de Oliveira** - *Desenvolvimento e Modelagem*
 * **Luiz Carlos Scalfi** - *Desenvolvimento e Arquitetura de Nuvem*
