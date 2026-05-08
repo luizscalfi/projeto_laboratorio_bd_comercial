@@ -1,28 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingBag, Trash2, CheckCircle, User, CreditCard, List, Lock, Eye, EyeOff, UserPlus } from 'lucide-react';
 import './styles/estilo_produto.css';
-import { LoaderCircle  } from 'lucide-react';
-import './styles/vendas.css';
 
 function Vendas() {
-  const [abaAtiva, setAbaAtiva] = useState('pdv'); 
+  const [abaAtiva, setAbaAtiva] = useState('pdv');
   const [usuarioLogado, setUsuarioLogado] = useState(null);
-  
+
   // Estados do Caixa
-  const [idCaixa, setIdCaixa] = useState('1'); 
+  const [idCaixa, setIdCaixa] = useState('1');
   const [sessaoAtiva, setSessaoAtiva] = useState(null);
   const [carregandoCaixa, setCarregandoCaixa] = useState(true);
+
+  const [toast, setToast] = useState({
+    visivel: false,
+    mensagem: '',
+    tipo: 'sucesso'
+  });
 
   // Estados de Dados Base
   const [produtos, setProdutos] = useState([]);
   const [clientes, setClientes] = useState([]);
   const [formasPagamento, setFormasPagamento] = useState([]);
   const [historicoVendas, setHistoricoVendas] = useState([]);
-  
+
   // Estados do Carrinho (PDV)
-  const [carrinho, setCarrinho] = useState([]); 
+  const [carrinho, setCarrinho] = useState([]);
   const [formItem, setFormItem] = useState({ id_produto: '', quantidade: 1 });
-  
+
   // Fechamento de Conta
   const [clienteSelecionado, setClienteSelecionado] = useState('');
   const [pagamentoSelecionado, setPagamentoSelecionado] = useState('');
@@ -35,6 +39,25 @@ function Vendas() {
   const [detalhesVendaId, setDetalhesVendaId] = useState(null);
   const [itensDetalhe, setItensDetalhe] = useState([]);
   const [filtroData, setFiltroData] = useState(''); // <-- NOVO ESTADO DO FILTRO
+
+  const [erroCliente, setErroCliente] = useState('');
+  const [erroPagamento, setErroPagamento] = useState('');
+
+  const mostrarToast = (mensagem, tipo = 'sucesso') => {
+    setToast({
+      visivel: true,
+      mensagem,
+      tipo
+    });
+
+    setTimeout(() => {
+      setToast({
+        visivel: false,
+        mensagem: '',
+        tipo: 'sucesso'
+      });
+    }, 3000);
+  };
 
   const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 
@@ -97,7 +120,7 @@ function Vendas() {
         })
       });
       const dados = await res.json();
-      
+
       if (!res.ok) {
         throw new Error(dados.detail || "Erro ao cadastrar.");
       }
@@ -105,7 +128,7 @@ function Vendas() {
       alert("Cliente cadastrado com sucesso!");
       setFormCliente({ nome: '', cpf_cnpj: '' });
       setMostrarModalCliente(false);
-      
+
       await carregarDados();
       setClienteSelecionado(dados.id_cliente.toString());
 
@@ -145,11 +168,37 @@ function Vendas() {
   const calcularTotalCarrinho = () => carrinho.reduce((acc, item) => acc + item.subtotal, 0);
 
   async function handleFinalizarVenda() {
-    if (carrinho.length === 0) return alert("O carrinho está vazio!");
-    if (!clienteSelecionado) return alert("Selecione um cliente!");
-    if (!pagamentoSelecionado) return alert("Selecione a forma de pagamento!");
-    if (!sessaoAtiva) return alert("Erro: Nenhuma sessão de caixa ativa encontrada.");
-    if (!usuarioLogado) return alert("Erro de sessão: Utilizador não identificado.");
+    setErroCliente('');
+    setErroPagamento('');
+
+    let valido = true;
+
+    if (carrinho.length === 0) {
+      alert("O carrinho está vazio!");
+      return;
+    }
+
+    if (!clienteSelecionado) {
+      setErroCliente("Cliente é obrigatório.");
+      valido = false;
+    }
+
+    if (!pagamentoSelecionado) {
+      setErroPagamento("Forma de pagamento é obrigatória.");
+      valido = false;
+    }
+
+    if (!sessaoAtiva) {
+      alert("Erro: Nenhuma sessão de caixa ativa encontrada.");
+      return;
+    }
+
+    if (!usuarioLogado) {
+      alert("Erro de sessão: Utilizador não identificado.");
+      return;
+    }
+
+    if (!valido) return;
 
     const valorTotal = calcularTotalCarrinho();
 
@@ -157,7 +206,7 @@ function Vendas() {
       const resVenda = await fetch(`${API_URL}/vendas/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           id_cliente: parseInt(clienteSelecionado),
           id_forma_pagamento: parseInt(pagamentoSelecionado),
           id_sessao_caixa: sessaoAtiva.id,
@@ -165,7 +214,7 @@ function Vendas() {
           id_usuario: usuarioLogado.id
         })
       });
-      
+
       if (!resVenda.ok) throw new Error((await resVenda.json()).detail);
       const { id_venda } = await resVenda.json();
 
@@ -173,19 +222,27 @@ function Vendas() {
         const resItem = await fetch(`${API_URL}/vendas/itens/`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id_venda: id_venda, id_produto: item.id_produto, quantidade: item.quantidade, valor_unitario: item.valor_unitario })
+          body: JSON.stringify({
+            id_venda,
+            id_produto: item.id_produto,
+            quantidade: item.quantidade,
+            valor_unitario: item.valor_unitario
+          })
         });
+
         if (!resItem.ok) throw new Error((await resItem.json()).detail);
       }
 
-      alert(`✅ Venda Concluída! Total: R$ ${valorTotal.toFixed(2)}`);
+      mostrarToast(`Venda Concluída! Total: R$ ${valorTotal.toFixed(2)}`, 'sucesso');
+
       setCarrinho([]);
       setClienteSelecionado('');
       setPagamentoSelecionado('');
-      carregarDados(); 
+
+      carregarDados();
 
     } catch (e) {
-      alert("❌ Erro ao finalizar venda: " + e.message);
+      mostrarToast("Erro ao finalizar venda: " + e.message, 'erro');
     }
   }
 
@@ -196,26 +253,26 @@ function Vendas() {
       const dados = await res.json();
       setItensDetalhe(dados.itens || []);
       setDetalhesVendaId(id);
-    } catch (e) { alert("Erro ao carregar detalhes da venda."); }
+    } catch (e) { mostrarToast("Erro ao finalizar venda: " + e.message, 'erro'); }
   }
 
   // LÓGICA DO FILTRO DE DATAS
-  const vendasFiltradas = filtroData 
+  const vendasFiltradas = filtroData
     ? historicoVendas.filter(v => {
-        if (!v.data_venda) return false;
-        const dataAjustada = new Date(v.data_venda);
-        const dataFormatada = `${dataAjustada.getFullYear()}-${String(dataAjustada.getMonth() + 1).padStart(2, '0')}-${String(dataAjustada.getDate()).padStart(2, '0')}`;
-        return dataFormatada === filtroData;
-      })
+      if (!v.data_venda) return false;
+      const dataAjustada = new Date(v.data_venda);
+      const dataFormatada = `${dataAjustada.getFullYear()}-${String(dataAjustada.getMonth() + 1).padStart(2, '0')}-${String(dataAjustada.getDate()).padStart(2, '0')}`;
+      return dataFormatada === filtroData;
+    })
     : historicoVendas;
 
   return (
     <div className="container">
       <div className="header" style={{ display: 'flex', gap: '20px', borderBottom: '2px solid #ecf0f1', paddingBottom: '10px', marginBottom: '20px' }}>
-        <button onClick={() => setAbaAtiva('pdv')} style={{ background: 'none', border: 'none', fontSize: '18px', fontWeight: 'bold', color: abaAtiva === 'pdv' ? '#355872' : '#bdc3c7', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <button onClick={() => setAbaAtiva('pdv')} style={{ background: 'none', border: 'none', fontSize: '18px', fontWeight: 'bold', color: abaAtiva === 'pdv' ? '#27ae60' : '#bdc3c7', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <ShoppingBag size={20} /> Ponto de Venda (PDV)
         </button>
-        <button onClick={() => setAbaAtiva('historico')} style={{ background: 'none', border: 'none', fontSize: '18px', fontWeight: 'bold', color: abaAtiva === 'historico' ? '#355872' : '#bdc3c7', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <button onClick={() => setAbaAtiva('historico')} style={{ background: 'none', border: 'none', fontSize: '18px', fontWeight: 'bold', color: abaAtiva === 'historico' ? '#3498db' : '#bdc3c7', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <List size={20} /> Histórico de Vendas
         </button>
       </div>
@@ -250,9 +307,9 @@ function Vendas() {
               {/* LADO ESQUERDO: Adicionar Itens */}
               <div style={{ flex: 2, minWidth: '300px', background: '#fdfdfd', padding: '20px', borderRadius: '8px', border: '1px solid #dcdde1' }}>
                 <h3 style={{ marginTop: 0, color: '#2c3e50' }}>🛒 Adicionar Produto</h3>
-                
+
                 <form onSubmit={handleColocarNoCarrinho} style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '20px' }}>
-                  <select required value={formItem.id_produto} onChange={e => setFormItem({...formItem, id_produto: e.target.value})} style={{ flex: 3, padding: '12px', fontSize: '15px' }}>
+                  <select required value={formItem.id_produto} onChange={e => setFormItem({ ...formItem, id_produto: e.target.value })} style={{ flex: 3, padding: '12px', fontSize: '15px' }}>
                     <option value="" disabled>Selecione o Produto (Nome - Stock)</option>
                     {produtos.filter(p => p.quantidade_estoque > 0).map(p => (
                       <option key={p.id} value={p.id}>
@@ -260,22 +317,22 @@ function Vendas() {
                       </option>
                     ))}
                   </select>
-                  <input type="number" required placeholder="Qtd" min="1" value={formItem.quantidade} onChange={e => setFormItem({...formItem, quantidade: e.target.value})} style={{ flex: 1, padding: '12px', fontSize: '15px' }} />
+                  <input type="number" required placeholder="Qtd" min="1" value={formItem.quantidade} onChange={e => setFormItem({ ...formItem, quantidade: e.target.value })} style={{ flex: 1, padding: '12px', fontSize: '15px' }} />
                   <button type="submit" style={{ background: '#3498db', color: '#fff', border: 'none', padding: '12px 20px', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>Inserir</button>
                 </form>
 
                 <div style={{ background: '#ecf0f1', padding: '15px', borderRadius: '6px', minHeight: '200px' }}>
                   <h4 style={{ margin: '0 0 10px 0', color: '#34495e' }}>Itens Registados:</h4>
                   {carrinho.length === 0 ? <p style={{ color: '#7f8c8d' }}>Carrinho vazio. Adicione itens acima.</p> : (
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', color: 'black' }}>
                       <tbody>
                         {carrinho.map((item, i) => (
-                          <tr key={i} style={{ borderBottom: '1px solid #bdc3c7' }}>
-                            <td style={{ padding: '8px 0' }}>{item.quantidade}x</td>
-                            <td><strong>{item.nome_produto}</strong></td>
+                          <tr key={i} style={{ borderBottom: '1px solidrgb(0, 0, 0)', color: 'black' }}>
+                            <td style={{ padding: '8px 0', color: 'black' }}>{item.quantidade}x</td>
+                            <td style={{ color: 'black' }}><strong>{item.nome_produto}</strong></td>
                             <td style={{ textAlign: 'right' }}>R$ {item.subtotal.toFixed(2)}</td>
                             <td style={{ textAlign: 'right' }}>
-                              <button onClick={() => handleRemoverDoCarrinho(i)} style={{ background: 'none', border: 'none', color: '#e74c3c', cursor: 'pointer' }}><Trash2 size={16}/></button>
+                              <button onClick={() => handleRemoverDoCarrinho(i)} style={{ background: 'none', border: 'none', color: '#e74c3c', cursor: 'pointer' }}><Trash2 size={16} /></button>
                             </td>
                           </tr>
                         ))}
@@ -288,24 +345,39 @@ function Vendas() {
               {/* LADO DIREITO: Fechamento de Conta */}
               <div style={{ flex: 1, minWidth: '300px', background: '#2c3e50', padding: '20px', borderRadius: '8px', color: '#ecf0f1', display: 'flex', flexDirection: 'column' }}>
                 <h3 style={{ marginTop: 0, borderBottom: '1px solid #34495e', paddingBottom: '10px' }}>💳 Fechar Conta</h3>
-                
+
                 <div style={{ marginBottom: '15px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '14px' }}><User size={16}/> Cliente:</label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '14px' }}><User size={16} /> Cliente:</label>
                   </div>
-                  
+
                   {/* SELETOR DE CLIENTES + BOTÃO NOVO CLIENTE */}
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <select value={clienteSelecionado} onChange={e => setClienteSelecionado(e.target.value)} style={{ flex: 1, padding: '10px', borderRadius: '4px', border: 'none' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <select
+                      required
+                      value={clienteSelecionado}
+                      onChange={(e) => {
+                        setClienteSelecionado(e.target.value);
+                        setErroCliente('');
+                      }}
+                    >
                       <option value="">Selecione o Cliente...</option>
-                      {clientes.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+                      {clientes.map(c => (
+                        <option key={c.id} value={c.id}>{c.nome}</option>
+                      ))}
                     </select>
-                    <button 
-                      onClick={() => setMostrarModalCliente(!mostrarModalCliente)} 
+
+                    {erroCliente && (
+                      <span style={{ color: '#e74c3c', fontSize: '12px' }}>
+                        {erroCliente}
+                      </span>
+                    )}
+                    <button
+                      onClick={() => setMostrarModalCliente(!mostrarModalCliente)}
                       style={{ background: '#3498db', color: 'white', border: 'none', padding: '0 12px', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                       title="Cadastrar Novo Cliente Rápido"
                     >
-                      <UserPlus size={18}/>
+                      <UserPlus size={18} />
                     </button>
                   </div>
                 </div>
@@ -314,8 +386,8 @@ function Vendas() {
                 {mostrarModalCliente && (
                   <form onSubmit={handleCadastrarCliente} style={{ background: '#34495e', padding: '15px', borderRadius: '6px', marginBottom: '15px', border: '1px solid #3498db' }}>
                     <h4 style={{ margin: '0 0 10px 0', color: '#3498db' }}>Novo Cliente</h4>
-                    <input required placeholder="Nome Completo" value={formCliente.nome} onChange={e => setFormCliente({...formCliente, nome: e.target.value})} style={{ width: '100%', padding: '8px', marginBottom: '10px', borderRadius: '4px', border: 'none' }} />
-                    <input placeholder="CPF / CNPJ (Opcional)" value={formCliente.cpf_cnpj} onChange={e => setFormCliente({...formCliente, cpf_cnpj: e.target.value})} style={{ width: '100%', padding: '8px', marginBottom: '10px', borderRadius: '4px', border: 'none' }} />
+                    <input required placeholder="Nome Completo" value={formCliente.nome} onChange={e => setFormCliente({ ...formCliente, nome: e.target.value })} style={{ width: '100%', padding: '8px', marginBottom: '10px', borderRadius: '4px', border: 'none' }} />
+                    <input placeholder="CPF / CNPJ (Opcional)" value={formCliente.cpf_cnpj} onChange={e => setFormCliente({ ...formCliente, cpf_cnpj: e.target.value })} style={{ width: '100%', padding: '8px', marginBottom: '10px', borderRadius: '4px', border: 'none' }} />
                     <div style={{ display: 'flex', gap: '10px' }}>
                       <button type="submit" style={{ flex: 1, background: '#2ecc71', color: 'white', border: 'none', padding: '8px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>Salvar</button>
                       <button type="button" onClick={() => setMostrarModalCliente(false)} style={{ flex: 1, background: '#e74c3c', color: 'white', border: 'none', padding: '8px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>Cancelar</button>
@@ -323,12 +395,27 @@ function Vendas() {
                   </form>
                 )}
 
-                <div style={{ marginBottom: '25px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '5px', fontSize: '14px' }}><CreditCard size={16}/> Pagamento:</label>
-                  <select value={pagamentoSelecionado} onChange={e => setPagamentoSelecionado(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '4px', border: 'none' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '5px', fontSize: '14px' }}><CreditCard size={16} /> Pagamento:</label>
+                  <select
+                    required
+                    value={pagamentoSelecionado}
+                    onChange={(e) => {
+                      setPagamentoSelecionado(e.target.value);
+                      setErroPagamento('');
+                    }}
+                  >
                     <option value="">Forma de Pagamento...</option>
-                    {formasPagamento.map(f => <option key={f.id} value={f.id}>{f.nome}</option>)}
+                    {formasPagamento.map(f => (
+                      <option key={f.id} value={f.id}>{f.nome}</option>
+                    ))}
                   </select>
+
+                  {erroPagamento && (
+                    <span style={{ color: '#e74c3c', fontSize: '12px' }}>
+                      {erroPagamento}
+                    </span>
+                  )}
                 </div>
 
                 <div style={{ marginTop: 'auto', background: '#34495e', padding: '15px', borderRadius: '6px', textAlign: 'center' }}>
@@ -339,7 +426,7 @@ function Vendas() {
                 <button onClick={handleFinalizarVenda} style={{ background: '#27ae60', color: 'white', border: 'none', padding: '15px', borderRadius: '6px', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer', marginTop: '15px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
                   <CheckCircle size={22} /> Confirmar Venda
                 </button>
-                
+
                 {carrinho.length > 0 && (
                   <button onClick={() => setCarrinho([])} style={{ background: 'transparent', color: '#e74c3c', border: '1px solid #e74c3c', padding: '10px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', marginTop: '10px' }}>
                     Cancelar Carrinho
@@ -354,15 +441,15 @@ function Vendas() {
       {/* ABA 2: HISTÓRICO DE VENDAS COM CALENDÁRIO */}
       {abaAtiva === 'historico' && (
         <section>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', color: 'black' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
             <h3 style={{ margin: 0 }}>Relatório de Vendas Concluídas</h3>
-            
+
             {/* O CALENDÁRIO MÁGICO AQUI */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#ecf0f1', padding: '8px 15px', borderRadius: '6px' }}>
               <label style={{ fontWeight: 'bold', color: '#2c3e50', fontSize: '14px' }}>Filtrar por Data:</label>
-              <input 
-                type="date" 
-                value={filtroData} 
+              <input
+                type="date"
+                value={filtroData}
                 onChange={(e) => setFiltroData(e.target.value)}
                 style={{ padding: '5px', border: '1px solid #bdc3c7', borderRadius: '4px' }}
               />
@@ -380,7 +467,7 @@ function Vendas() {
                 <th>Cliente</th>
                 <th>Pagamento</th>
                 <th>Total</th>
-                <th style={{textAlign: 'center'}}>Ações</th>
+                <th style={{ textAlign: 'center' }}>Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -393,9 +480,9 @@ function Vendas() {
                     <td>{v.nome_cliente || 'Cliente Padrão'}</td>
                     <td>{v.forma_pagamento || 'Dinheiro'}</td>
                     <td className="preco" style={{ color: '#27ae60' }}>R$ {(v.valor_total || 0).toFixed(2)}</td>
-                    <td style={{textAlign: 'center'}}>
+                    <td style={{ textAlign: 'center' }}>
                       <button onClick={() => handleVerDetalhes(v.id)} title="Ver Itens" style={{ background: 'none', border: 'none', color: '#3498db', cursor: 'pointer' }}>
-                        {detalhesVendaId === v.id ? <EyeOff size={18}/> : <Eye size={18}/>}
+                        {detalhesVendaId === v.id ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
                     </td>
                   </tr>
@@ -415,10 +502,31 @@ function Vendas() {
                   )}
                 </React.Fragment>
               ))}
-              {vendasFiltradas.length === 0 && <tr><td colSpan="6" style={{textAlign: 'center', padding: '20px'}}>Nenhuma venda encontrada para este filtro.</td></tr>}
+              {vendasFiltradas.length === 0 && <tr><td colSpan="6" style={{ textAlign: 'center', padding: '20px' }}>Nenhuma venda encontrada para este filtro.</td></tr>}
             </tbody>
           </table>
         </section>
+      )}
+      {toast.visivel && (
+        <div
+          style={{
+            position: 'fixed',
+            top: '20px',
+            right: '20px',
+            backgroundColor:
+              toast.tipo === 'sucesso' ? '#2ecc71' : '#e74c3c',
+            color: '#fff',
+            padding: '14px 18px',
+            borderRadius: '8px',
+            boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+            zIndex: 99999,
+            fontWeight: '600',
+            minWidth: '280px',
+            animation: 'slideToast 0.25s ease'
+          }}
+        >
+          {toast.mensagem}
+        </div>
       )}
     </div>
   );
