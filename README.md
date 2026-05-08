@@ -67,6 +67,7 @@ O diferencial técnico deste projeto é a delegação de tarefas críticas para 
 │   └── Indexs.sql       # Estruturas de otimização de performance
 └── Dicionário_de_dados.xlsx
 
+```
 ## 🚀 Como Executar
 
 ### 1. Banco de Dados
@@ -84,6 +85,7 @@ python -m venv venv
 pip install -r requirements.txt
 # Configure a DATABASE_URL no seu .env
 uvicorn main:app --reload
+```
 
 ### 3. Frontend
 ```bash
@@ -91,6 +93,7 @@ cd meu_frontend
 npm install
 # Configure a VITE_API_URL no seu .env
 npm run dev
+````
 
 ---
 
