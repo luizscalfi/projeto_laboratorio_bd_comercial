@@ -66,3 +66,43 @@ O diferencial técnico deste projeto é a delegação de tarefas críticas para 
 │   ├── Views.sql        # Consultas gerenciais consolidadas
 │   └── Indexs.sql       # Estruturas de otimização de performance
 └── Dicionário_de_dados.xlsx
+
+## 🚀 Como Executar
+
+### 1. Banco de Dados
+Certifique-se de ter uma instância do PostgreSQL ativa. Execute os scripts da pasta `/sql` na ordem:
+1. Tabelas estruturais.
+2. `Views.sql`.
+3. `Triggers.sql`.
+4. `Indexs.sql`.
+
+### 2. Backend
+```bash
+cd backend
+python -m venv venv
+# Ative o venv e instale:
+pip install -r requirements.txt
+# Configure a DATABASE_URL no seu .env
+uvicorn main:app --reload
+
+### 3. Frontend
+```bash
+cd meu_frontend
+npm install
+# Configure a VITE_API_URL no seu .env
+npm run dev
+
+---
+
+## 🔗 Links Úteis
+
+* **Repositório:** [https://github.com/luizscalfi/projeto_laboratorio_bd_comercial](https://github.com/luizscalfi/projeto_laboratorio_bd_comercial)
+* **Aplicação em Produção:** [Link do seu Frontend no Render]
+* **Documentação da API (Swagger):** [https://seu-backend.onrender.com/docs](https://seu-backend.onrender.com/docs)
+
+---
+
+## 👥 Autores
+
+* **Diego Rafael de Oliveira** - *Desenvolvimento e Modelagem*
+* **Luiz Carlos Scalfi** - *Desenvolvimento e Arquitetura de Nuvem*
