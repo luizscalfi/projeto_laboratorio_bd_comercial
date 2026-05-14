@@ -14,6 +14,8 @@ function Produtos() {
     mensagem: '',
     tipo: 'sucesso'
   });
+  const [modalExcluirAberto, setModalExcluirAberto] = useState(false);
+  const [produtoSelecionado, setProdutoSelecionado] = useState(null);
 
   useEffect(() => {
     carregarProdutos();
@@ -69,29 +71,37 @@ function Produtos() {
   async function handleDeletar(produto) {
     if (produto.quantidade_estoque > 0) {
       mostrarToast(
-        `Ação bloqueada: O produto "${produto.nome}" possui ${produto.quantidade_estoque} unidades em estoque. ${<br></br>} O produto deve estar com o estoque zerado para ser removido`,
+        `Ação bloqueada:\nO produto "${produto.nome}" possui ${produto.quantidade_estoque} unidades em estoque.\n\nO produto deve estar com o estoque zerado para ser removido.`,
         'erro'
       );
       return;
     }
 
-    if (!window.confirm(`Tem certeza que deseja excluir o produto "${produto.nome}" do catálogo?`)) return;
+    setProdutoSelecionado(produto);
+    setModalExcluirAberto(true);
+  }
+
+  async function confirmarExclusao() {
+    if (!produtoSelecionado) return;
 
     try {
-      const resposta = await fetch(`${API_URL}/produtos/${produto.id}`, {
+      const resposta = await fetch(`${API_URL}/produtos/${produtoSelecionado.id}`, {
         method: 'DELETE'
       });
 
       if (resposta.ok) {
-        setProdutos(produtos.filter(p => p.id !== produto.id));
+        setProdutos(produtos.filter(p => p.id !== produtoSelecionado.id));
 
         mostrarToast(
-          `Produto "${produto.nome}" excluído com sucesso!`,
+          `Produto "${produtoSelecionado.nome}" excluído com sucesso!`,
           'sucesso'
         );
       }
     } catch (erro) {
       mostrarToast("Erro de conexão com o servidor.", 'erro');
+    } finally {
+      setModalExcluirAberto(false);
+      setProdutoSelecionado(null);
     }
   }
 
@@ -246,6 +256,99 @@ function Produtos() {
           }}
         >
           {toast.mensagem}
+        </div>
+      )}
+      {modalExcluirAberto && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'rgba(0,0,0,0.45)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 9999,
+            backdropFilter: 'blur(3px)'
+          }}
+        >
+          <div
+            style={{
+              width: '420px',
+              backgroundColor: '#ffffff',
+              borderRadius: '12px',
+              padding: '25px',
+              boxShadow: '0 10px 35px rgba(0,0,0,0.2)',
+              animation: 'fadeIn 0.2s ease'
+            }}
+          >
+            <h2
+              style={{
+                margin: '0 0 10px 0',
+                color: '#2f3640',
+                fontSize: '22px'
+              }}
+            >
+              Confirmar Exclusão
+            </h2>
+
+            <p
+              style={{
+                color: '#636e72',
+                lineHeight: '1.5',
+                marginBottom: '25px'
+              }}
+            >
+              Tem certeza que deseja remover o produto:
+              <br /><br />
+              <strong>{produtoSelecionado?.nome}</strong>
+              <br /><br />
+              Esta ação não poderá ser desfeita.
+            </p>
+
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                gap: '10px'
+              }}
+            >
+              <button
+                onClick={() => {
+                  setModalExcluirAberto(false);
+                  setProdutoSelecionado(null);
+                }}
+                style={{
+                  padding: '12px 18px',
+                  border: 'none',
+                  borderRadius: '6px',
+                  backgroundColor: '#dfe6e9',
+                  color: '#2f3640',
+                  cursor: 'pointer',
+                  fontWeight: '600'
+                }}
+              >
+                Cancelar
+              </button>
+
+              <button
+                onClick={confirmarExclusao}
+                style={{
+                  padding: '12px 18px',
+                  border: 'none',
+                  borderRadius: '6px',
+                  backgroundColor: '#c0392b',
+                  color: '#ffffff',
+                  cursor: 'pointer',
+                  fontWeight: '600'
+                }}
+              >
+                Confirmar Exclusão
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

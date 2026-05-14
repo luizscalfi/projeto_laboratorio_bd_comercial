@@ -29,6 +29,12 @@ function Compras() {
     tipo: 'sucesso'
   });
 
+  const [modalConfirm, setModalConfirm] = useState({
+    visivel: false,
+    mensagem: '',
+    onConfirm: null
+  });
+
   const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 
   useEffect(() => {
@@ -54,6 +60,14 @@ function Compras() {
       });
     }, 3000);
   };
+
+  function abrirConfirmacao(mensagem, onConfirm) {
+    setModalConfirm({
+      visivel: true,
+      mensagem,
+      onConfirm
+    });
+  }
 
   async function carregarDados() {
     try {
@@ -96,14 +110,17 @@ function Compras() {
   }
 
   async function handleDeletarFornecedor(id) {
-    if (!window.confirm("Remover este fornecedor?")) return;
-    try {
-      const res = await fetch(`${API_URL}/fornecedores/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        carregarDados();
-        mostrarToast("Fornecedor removido com sucesso!", "sucesso");
+    abrirConfirmacao("Remover este fornecedor?", async () => {
+      try {
+        const res = await fetch(`${API_URL}/fornecedores/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+          carregarDados();
+          mostrarToast("Fornecedor removido com sucesso!", "sucesso");
+        }
+      } catch (e) {
+        mostrarToast("Erro ao excluir.");
       }
-    } catch (e) { mostrarToast("Erro ao excluir."); }
+    });
   }
 
   async function handleQuickCadastrarProduto(e) {
@@ -219,14 +236,22 @@ function Compras() {
   }
 
   async function handleDeletarCompraHistorico(id) {
-    if (!window.confirm("Atenção: Esta ação estornará o Stock e o Financeiro. Continuar?")) return;
-    try {
-      const res = await fetch(`${API_URL}/compras/${id}?id_usuario=${usuarioLogado.id}`, { method: 'DELETE' });
-      if (res.ok) carregarDados();
-      else mostrarToast((await res.json()).detail, "erro");
-    } catch (e) {
-      mostrarToast("Erro ao processar estorno.", "erro");
-    }
+    abrirConfirmacao(
+      "Atenção: Esta ação estornará o Stock e o Financeiro. Continuar?",
+      async () => {
+        try {
+          const res = await fetch(`${API_URL}/compras/${id}?id_usuario=${usuarioLogado.id}`, {
+            method: 'DELETE'
+          });
+
+          if (res.ok) carregarDados();
+          else mostrarToast((await res.json()).detail, "erro");
+
+        } catch (e) {
+          mostrarToast("Erro ao processar estorno.", "erro");
+        }
+      }
+    );
   }
 
   // LÓGICA DO FILTRO DE DATAS
@@ -258,8 +283,8 @@ function Compras() {
               value={formFornecedor.cnpj}
               onChange={e => {
                 const valor = e.target.value
-                  .replace(/\D/g, '') 
-                  .slice(0, 14); 
+                  .replace(/\D/g, '')
+                  .slice(0, 14);
 
                 setFormFornecedor({
                   ...formFornecedor,
@@ -421,6 +446,79 @@ function Compras() {
           }}
         >
           {toast.mensagem}
+        </div>
+      )}
+      {modalConfirm.visivel && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'rgba(0,0,0,0.45)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 9999,
+            backdropFilter: 'blur(3px)'
+          }}
+        >
+          <div
+            style={{
+              width: '420px',
+              backgroundColor: '#ffffff',
+              borderRadius: '12px',
+              padding: '25px',
+              boxShadow: '0 10px 35px rgba(0,0,0,0.2)',
+              animation: 'fadeIn 0.2s ease'
+            }}
+          >
+            <h2 style={{ margin: '0 0 10px 0', color: '#2f3640', fontSize: '20px' }}>
+              Confirmação
+            </h2>
+
+            <p style={{ color: '#636e72', lineHeight: '1.5', marginBottom: '25px' }}>
+              {modalConfirm.mensagem}
+            </p>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button
+                onClick={() =>
+                  setModalConfirm({ visivel: false, mensagem: '', onConfirm: null })
+                }
+                style={{
+                  padding: '12px 18px',
+                  border: 'none',
+                  borderRadius: '6px',
+                  backgroundColor: '#dfe6e9',
+                  color: '#2f3640',
+                  cursor: 'pointer',
+                  fontWeight: '600'
+                }}
+              >
+                Cancelar
+              </button>
+
+              <button
+                onClick={() => {
+                  if (modalConfirm.onConfirm) modalConfirm.onConfirm();
+                  setModalConfirm({ visivel: false, mensagem: '', onConfirm: null });
+                }}
+                style={{
+                  padding: '12px 18px',
+                  border: 'none',
+                  borderRadius: '6px',
+                  backgroundColor: '#e74c3c',
+                  color: '#ffffff',
+                  cursor: 'pointer',
+                  fontWeight: '600'
+                }}
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
