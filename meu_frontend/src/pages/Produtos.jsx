@@ -9,6 +9,11 @@ function Produtos() {
   const [carregando, setCarregando] = useState(true);
 
   const [rotacao, setRotacao] = useState(0);
+  const [toast, setToast] = useState({
+    visivel: false,
+    mensagem: '',
+    tipo: 'sucesso'
+  });
 
   useEffect(() => {
     carregarProdutos();
@@ -23,6 +28,22 @@ function Produtos() {
 
     return () => clearInterval(interval);
   }, [carregando]);
+
+  const mostrarToast = (mensagem, tipo = 'sucesso') => {
+    setToast({
+      visivel: true,
+      mensagem,
+      tipo
+    });
+
+    setTimeout(() => {
+      setToast({
+        visivel: false,
+        mensagem: '',
+        tipo: 'sucesso'
+      });
+    }, 3000);
+  };
 
   async function carregarProdutos() {
     setCarregando(true);
@@ -47,7 +68,10 @@ function Produtos() {
 
   async function handleDeletar(produto) {
     if (produto.quantidade_estoque > 0) {
-      alert(`Ação bloqueada: O produto "${produto.nome}" possui ${produto.quantidade_estoque} unidades em estoque. Zere o estoque antes de excluir.`);
+      mostrarToast(
+        `Ação bloqueada: O produto "${produto.nome}" possui ${produto.quantidade_estoque} unidades em estoque. ${<br></br>} O produto deve estar com o estoque zerado para ser removido`,
+        'erro'
+      );
       return;
     }
 
@@ -60,12 +84,14 @@ function Produtos() {
 
       if (resposta.ok) {
         setProdutos(produtos.filter(p => p.id !== produto.id));
-      } else {
-        const erro = await resposta.json();
-        alert(`Erro: ${erro.detail}`);
+
+        mostrarToast(
+          `Produto "${produto.nome}" excluído com sucesso!`,
+          'sucesso'
+        );
       }
     } catch (erro) {
-      alert("Erro de conexão com o servidor.");
+      mostrarToast("Erro de conexão com o servidor.", 'erro');
     }
   }
 
@@ -198,6 +224,30 @@ function Produtos() {
           )}
         </tbody>
       </table>
+      {toast.visivel && (
+        <div
+          style={{
+            position: 'fixed',
+            top: '20px',
+            right: '20px',
+            backgroundColor:
+              toast.tipo === 'sucesso'
+                ? '#2ecc71'
+                : '#e74c3c',
+            color: '#fff',
+            padding: '14px 18px',
+            borderRadius: '8px',
+            boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+            zIndex: 99999,
+            fontWeight: '600',
+            minWidth: '280px',
+            animation: 'slideToast 0.25s ease',
+            whiteSpace: 'pre-line'
+          }}
+        >
+          {toast.mensagem}
+        </div>
+      )}
     </div>
   );
 }

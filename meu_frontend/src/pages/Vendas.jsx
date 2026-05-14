@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingBag, Trash2, CheckCircle, User, CreditCard, List, Lock, Eye, EyeOff, UserPlus } from 'lucide-react';
+import { ShoppingBag, Trash2, CheckCircle, User, CreditCard, List, Lock, Eye, EyeOff, UserPlus, LoaderCircle } from 'lucide-react';
 import './styles/estilo_produto.css';
 
 function Vendas() {
@@ -10,6 +10,7 @@ function Vendas() {
   const [idCaixa, setIdCaixa] = useState('1');
   const [sessaoAtiva, setSessaoAtiva] = useState(null);
   const [carregandoCaixa, setCarregandoCaixa] = useState(true);
+  const [erroCarrinho, setErroCarrinho] = useState('');
 
   const [toast, setToast] = useState({
     visivel: false,
@@ -60,6 +61,17 @@ function Vendas() {
   };
 
   const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+  const [rotacao, setRotacao] = useState(0);
+
+  useEffect(() => {
+    if (!carregandoCaixa) return;
+
+    const interval = setInterval(() => {
+      setRotacao((prev) => prev + 8);
+    }, 16);
+
+    return () => clearInterval(interval);
+  }, [carregandoCaixa]);
 
   useEffect(() => {
     const user = localStorage.getItem('usuarioGestao');
@@ -125,7 +137,7 @@ function Vendas() {
         throw new Error(dados.detail || "Erro ao cadastrar.");
       }
 
-      alert("Cliente cadastrado com sucesso!");
+      mostrarToast("Cliente cadastrado com sucesso!", "sucesso");
       setFormCliente({ nome: '', cpf_cnpj: '' });
       setMostrarModalCliente(false);
 
@@ -133,7 +145,7 @@ function Vendas() {
       setClienteSelecionado(dados.id_cliente.toString());
 
     } catch (erro) {
-      alert(erro.message);
+      mostrarToast(erro.message, "erro");
     }
   }
 
@@ -146,7 +158,11 @@ function Vendas() {
 
     const qtdJaNoCarrinho = carrinho.filter(i => i.id_produto === produto.id).reduce((acc, curr) => acc + curr.quantidade, 0);
     if (qtdJaNoCarrinho + qtdDesejada > produto.quantidade_estoque) {
-      return alert(`❌ Stock insuficiente! Restam ${produto.quantidade_estoque - qtdJaNoCarrinho} unidades.`);
+      mostrarToast(
+        `Stock insuficiente! Restam ${produto.quantidade_estoque - qtdJaNoCarrinho} unidades.`,
+        "erro"
+      );
+      return;
     }
 
     const novoItem = {
@@ -170,12 +186,13 @@ function Vendas() {
   async function handleFinalizarVenda() {
     setErroCliente('');
     setErroPagamento('');
+    setErroCarrinho('');
 
     let valido = true;
 
     if (carrinho.length === 0) {
-      alert("O carrinho está vazio!");
-      return;
+      setErroCarrinho("Adicione pelo menos 1 item.");
+      valido = false;
     }
 
     if (!clienteSelecionado) {
@@ -189,12 +206,12 @@ function Vendas() {
     }
 
     if (!sessaoAtiva) {
-      alert("Erro: Nenhuma sessão de caixa ativa encontrada.");
+      mostrarToast("Nenhuma sessão de caixa ativa encontrada.", "erro");
       return;
     }
 
     if (!usuarioLogado) {
-      alert("Erro de sessão: Utilizador não identificado.");
+      mostrarToast("Erro de sessão: Utilizador não identificado.", "erro");
       return;
     }
 
@@ -272,7 +289,7 @@ function Vendas() {
         <button onClick={() => setAbaAtiva('pdv')} style={{ background: 'none', border: 'none', fontSize: '18px', fontWeight: 'bold', color: abaAtiva === 'pdv' ? '#27ae60' : '#bdc3c7', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <ShoppingBag size={20} /> Ponto de Venda (PDV)
         </button>
-        <button onClick={() => setAbaAtiva('historico')} style={{ background: 'none', border: 'none', fontSize: '18px', fontWeight: 'bold', color: abaAtiva === 'historico' ? '#3498db' : '#bdc3c7', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <button onClick={() => setAbaAtiva('historico')} style={{ background: 'none', border: 'none', fontSize: '18px', fontWeight: 'bold', color: abaAtiva === 'historico' ? '#27ae60' : '#bdc3c7', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <List size={20} /> Histórico de Vendas
         </button>
       </div>
@@ -289,7 +306,27 @@ function Vendas() {
           </div>
 
           {carregandoCaixa ? (
-            <div style={{ textAlign: 'center', padding: '40px', color: '#7f8c8d' }}>⏳ Verificando liberação do terminal...</div>
+            <div
+              style={{
+                textAlign: 'center',
+                padding: '40px',
+                color: '#7f8c8d',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '10px'
+              }}
+            >
+              <LoaderCircle
+                size={40}
+                style={{
+                  transform: `rotate(${rotacao}deg)`,
+                  color: '#3498db'
+                }}
+              />
+
+              <span>Verificando liberação do terminal...</span>
+            </div>
           ) : !sessaoAtiva ? (
             <div style={{ background: '#f8d7da', padding: '30px', borderRadius: '8px', textAlign: 'center', border: '1px solid #f5c6cb' }}>
               <Lock size={48} color="#721c24" style={{ marginBottom: '15px' }} />
